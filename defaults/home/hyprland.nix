@@ -2,7 +2,6 @@
 let
   t = import ../theme.nix;
   monitors = lib.concatMapStrings (m: "monitor = ${m}\n") osConfig.my.monitors;
-
   workspaceBinds = lib.concatMapStrings (i:
     let n = toString i; in ''
       bind = SUPER, ${n}, workspace, ${n}
@@ -16,17 +15,13 @@ in
   # write the classic hyprland.conf, which Hyprland reads when no
   # hyprland.lua is present. The compositor itself comes from
   # programs.hyprland.enable at system level.
-
   xdg.configFile."hypr/hyprland.conf".text = ''
     ${monitors}
-
     $mod  = SUPER
     $term = kitty
     $menu = rofi -show drun
 
     exec-once = waybar
-    exec-once = nm-applet --indicator
-    exec-once = blueman-applet
 
     general {
         gaps_in = ${toString t.gaps}
@@ -94,15 +89,15 @@ in
     bind = $mod, F, fullscreen
     bind = $mod, V, togglefloating
     bind = $mod, L, exec, hyprlock
+    bind = $mod, K, exec, hypr-keys
+    bind = $mod SHIFT, E, exec, power-menu
+    bind = $mod SHIFT, S, exec, screenshot
     bind = $mod SHIFT, Q, exit
 
     bind = $mod, left, movefocus, l
     bind = $mod, right, movefocus, r
     bind = $mod, up, movefocus, u
     bind = $mod, down, movefocus, d
-
-    bind = , Print, exec, grim -g "$(slurp)" - | wl-copy
-    bind = SHIFT, Print, exec, grim - | wl-copy
 
     ${workspaceBinds}
 

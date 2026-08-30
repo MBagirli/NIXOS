@@ -8,10 +8,6 @@
   };
 
   # ---- display manager ----
-  # PASS 2: leave this commented until `nvidia-smi` and `nvidia-offload`
-  # are confirmed working from the TTY. Enabling SDDM before the driver
-  # is verified is how you end up at a black screen with no console.
-  #
   services.displayManager.sddm = {
     enable = true;
     wayland.enable = true;
@@ -26,12 +22,13 @@
   fonts = {
     packages = with pkgs; [
       nerd-fonts.jetbrains-mono
+      nerd-fonts.symbols-only     # full glyph set as fallback for missing icons
       noto-fonts
       noto-fonts-color-emoji
       noto-fonts-cjk-sans
     ];
     fontconfig.defaultFonts = {
-      monospace = [ "JetBrainsMono Nerd Font" ];
+      monospace = [ "JetBrainsMono Nerd Font" "Symbols Nerd Font" ];
       emoji = [ "Noto Color Emoji" ];
     };
   };

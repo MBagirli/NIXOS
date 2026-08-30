@@ -2,8 +2,9 @@
 {
   # Extra packages on top of the shared defaults.
   home.packages = with pkgs; [
-    # vscode
-    # thunderbird
+    vscode
+    keepass
+    openconnect
   ];
 
   # Overrides of the shared look. These work because the matching values
@@ -13,6 +14,6 @@
   programs.git = {
     enable = true;
     settings.user.name = "murad";
-    settings.user.email = "murad@example.com";
+    settings.user.email = "mbagirli78@gmail.com";
   };
 }

@@ -5,7 +5,6 @@
   # kitty, waybar, rofi, dunst, hyprlock are installed by their
   # programs.*.enable lines.
   environment.systemPackages = with pkgs; [
-    # --- CLI ---
     git
     wget
     curl
@@ -25,8 +24,6 @@
     libnotify
     usbutils
     pciutils
-
-    # --- GUI ---
     firefox
     thunar
     tumbler
@@ -34,5 +31,9 @@
     imv
     pavucontrol
     networkmanagerapplet
+    swappy
+    file
+    lsof
+    vim
   ];
 }
