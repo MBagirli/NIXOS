@@ -1,7 +1,6 @@
 { config, lib, pkgs, ... }:
 let
   t = import ../theme.nix;
-  inherit (config.lib.formats.rasi) mkLiteral;
 in
 {
   programs.rofi = {
@@ -10,71 +9,105 @@ in
     # Wayland support built in.
     package = pkgs.rofi;
     terminal = "${pkgs.kitty}/bin/kitty";
-    font = "${t.font} ${toString t.fontSize}";
+
+    # Must be set here, NOT inside extraConfig. HM emits this as a
+    # proper `@theme "path"` line after the configuration block; putting
+    # `theme` inside extraConfig produces the deprecated `theme:` option
+    # and rofi refuses to start.
+    theme = "${config.xdg.configHome}/rofi/theme.rasi";
 
     extraConfig = {
       modes = "drun,run,window";
       show-icons = true;
       drun-display-format = "{name}";
-      display-drun = "  ";
-    };
-
-    # rofi's rasi format needs mkLiteral for anything that is not a
-    # plain string — colors, sizes, keywords.
-    theme = lib.mkDefault {
-      "*" = {
-        bg = mkLiteral "#${t.bg}";
-        bg-alt = mkLiteral "#${t.surface}";
-        fg = mkLiteral "#${t.fg}";
-        fg-dim = mkLiteral "#${t.fgDim}";
-        accent = mkLiteral "#${t.accent}";
-
-        background-color = mkLiteral "transparent";
-        text-color = mkLiteral "@fg";
-      };
-
-      window = {
-        width = mkLiteral "600px";
-        background-color = mkLiteral "@bg";
-        border = mkLiteral "${toString t.border}px";
-        border-color = mkLiteral "@accent";
-        border-radius = mkLiteral "${toString t.rounding}px";
-        padding = mkLiteral "12px";
-      };
-
-      inputbar = {
-        children = map mkLiteral [ "prompt" "entry" ];
-        background-color = mkLiteral "@bg-alt";
-        border-radius = mkLiteral "${toString t.rounding}px";
-        padding = mkLiteral "8px";
-        spacing = mkLiteral "8px";
-      };
-
-      prompt.text-color = mkLiteral "@accent";
-      entry.placeholder = "search";
-      entry.placeholder-color = mkLiteral "@fg-dim";
-
-      listview = {
-        lines = 8;
-        columns = 1;
-        spacing = mkLiteral "4px";
-        padding = mkLiteral "12px 0 0 0";
-      };
-
-      element = {
-        padding = mkLiteral "8px";
-        border-radius = mkLiteral "${toString t.rounding}px";
-      };
-
-      "element selected" = {
-        background-color = mkLiteral "@accent";
-        text-color = mkLiteral "#${t.bg}";
-      };
-
-      element-icon = {
-        size = mkLiteral "22px";
-        padding = mkLiteral "0 8px 0 0";
-      };
+      display-drun = "";
+      icon-theme = "Papirus-Dark";
     };
   };
+
+  # Written as a raw rasi file rather than through programs.rofi.theme's
+  # attrset form: that needs mkLiteral on nearly every value and cannot
+  # express the nested selectors below. Kept in the same visual language
+  # as keybinds.rasi and power.rasi.
+  xdg.configFile."rofi/theme.rasi".text = ''
+    * {
+      bg:      rgba(${t.rgbBg}, 0.86);
+      surface: rgba(${t.rgbSurface}, 0.35);
+      fg:      #${t.fg};
+      fg-dim:  #${t.fgDim};
+      accent:  #${t.accent};
+
+      background-color: transparent;
+      text-color:       @fg;
+      font:             "${t.font} ${toString t.fontSize}";
+    }
+
+    window {
+      width:            620px;
+      background-color: @bg;
+      border:           1px;
+      border-color:     rgba(${t.rgbSurface}, 0.8);
+      border-radius:    18px;
+      padding:          0px;
+      children:         [ mainbox ];
+    }
+
+    mainbox {
+      children: [ inputbar, listview ];
+      spacing:  0px;
+    }
+
+    /* Search band with a hairline under it */
+    inputbar {
+      children:         [ entry ];
+      background-color: @surface;
+      border:           0px 0px 1px 0px;
+      border-color:     rgba(${t.rgbSurface}, 0.8);
+      border-radius:    18px 18px 0px 0px;
+      padding:          16px 24px;
+    }
+
+    entry {
+      cursor:         text;
+      vertical-align: 0.5;
+      placeholder:    "";
+      text-color:     @fg;
+    }
+
+    listview {
+      lines:            9;
+      columns:          1;
+      spacing:          0px;
+      padding:          10px 14px 16px 14px;
+      background-color: transparent;
+      scrollbar:        false;
+      dynamic:          true;
+    }
+
+    /* Uniform rows — no alternating stripe */
+    element {
+      padding:          9px 12px;
+      border-radius:    10px;
+      spacing:          12px;
+      background-color: transparent;
+      text-color:       @fg;
+    }
+
+    element selected {
+      background-color: @accent;
+      text-color:       #${t.bg};
+    }
+
+    element-icon {
+      size:             22px;
+      background-color: transparent;
+      vertical-align:   0.5;
+    }
+
+    element-text {
+      background-color: transparent;
+      text-color:       inherit;
+      vertical-align:   0.5;
+    }
+  '';
 }

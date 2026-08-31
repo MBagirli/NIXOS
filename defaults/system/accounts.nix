@@ -23,7 +23,7 @@ in
       lib.mapAttrs (name: u: {
         isNormalUser = true;
         description = u.description or name;
-        extraGroups = [ "networkmanager" "video" "audio" "input" ]
+        extraGroups = [ "networkmanager" "video" "audio" "input" "docker" ]
           ++ lib.optional u.admin "wheel"
           ++ (u.extraGroups or [ ]);
       }) registry;

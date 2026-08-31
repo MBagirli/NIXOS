@@ -31,4 +31,6 @@
     acpi
     lm_sensors
   ];
+
+  virtualisation.vmware.host.enable = true;
 }

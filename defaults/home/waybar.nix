@@ -16,32 +16,32 @@ let
   #
   # A hair space (U+200A) is ~1px at this font size. Add them to the LEFT
   # of a glyph to push it RIGHT, to the RIGHT to push it LEFT.
-  # Tune by changing these four numbers only, then rebuild.
   hair = u "\\u200a";
   pad = n: lib.concatStrings (lib.replicate n hair);
 
-  keybindsLeftPad  = 0;   # increase to push the keyboard icon RIGHT
-  keybindsRightPad = 6;   # increase to push it LEFT
+  keybindsLeftPad  = 0;
+  keybindsRightPad = 6;
 
-  powerLeftPad  = 0;      # increase to push the NixOS logo RIGHT
-  powerRightPad = 6;      # increase to push it LEFT
+  powerLeftPad  = 0;
+  powerRightPad = 6;
+
+  # ---- VERTICAL GEOMETRY ----
+  # These three must satisfy: pillHeight + 2*vMargin == barHeight
+  # Any slack left over is what makes the pills sit off-centre, because
+  # GTK has no rule about where to put an odd remainder.
+  barHeight  = 36;
+  vMargin    = 5;
+  pillHeight = barHeight - (2 * vMargin);   # = 26
+
+  # Workspaces shown on EVERY output. An empty list means "not pinned to
+  # a particular monitor", which is what makes both bars show the same
+  # set instead of Hyprland's per-monitor split.
+  persistent = lib.listToAttrs
+    (map (n: lib.nameValuePair (toString n) [ ]) (lib.range 1 5));
 in
 {
-  # NOTE: hypr-keys lives in defaults/home/keybinds.nix, not here.
-  home.packages = [
-    (pkgs.writeShellScriptBin "power-menu" ''
-      choice=$(printf '\uf023  Lock\n\uf2f5  Log out\n\uf186  Suspend\n\uf021  Reboot\n\uf011  Shutdown' \
-        | ${pkgs.rofi}/bin/rofi -dmenu -i -p "power" -theme-str 'listview { lines: 5; }')
-
-      case "$choice" in
-        *Lock)      hyprlock ;;
-        *"Log out") hyprctl dispatch exit ;;
-        *Suspend)   systemctl suspend ;;
-        *Reboot)    systemctl reboot ;;
-        *Shutdown)  systemctl poweroff ;;
-      esac
-    '')
-  ];
+  # NOTE: power-menu lives in defaults/home/powermenu.nix and
+  # hypr-keys in defaults/home/keybinds.nix.
 
   programs.waybar = {
     enable = true;
@@ -50,13 +50,8 @@ in
     settings.main = {
       layer = "top";
       position = "top";
-      height = 36;
-      # 0 rather than a gap: waybar's spacing is added after each module's
-      # content, which would push glyphs left inside their own pill. The
-      # pill margins below provide the separation instead.
-      spacing = 0;
-      margin-left = 6;
-      margin-right = 10;
+      height = barHeight;
+      spacing = 0;            # pill margins provide the separation
 
       modules-left = [ "custom/keybinds" "hyprland/workspaces" ];
       modules-center = [ "clock" ];
@@ -80,13 +75,17 @@ in
         on-click = "power-menu";
       };
 
-      # Hyprland workspaces are virtual desktops. all-outputs makes every
-      # bar show every workspace rather than only those on its own monitor.
+      # Hyprland workspaces are virtual desktops.
+      #   all-outputs        -> every bar lists every workspace
+      #   persistent-workspaces with empty lists -> 1..5 always present on
+      #                         all monitors, so the two bars agree
+      #   show-special = false -> hides scratchpad pseudo-workspaces
       "hyprland/workspaces" = {
         format = "{id}";
         all-outputs = true;
         sort-by-number = true;
-        persistent-workspaces."*" = 5;
+        show-special = false;
+        persistent-workspaces = persistent;
         on-click = "activate";
         on-scroll-up = "hyprctl dispatch workspace e+1";
         on-scroll-down = "hyprctl dispatch workspace e-1";
@@ -161,12 +160,18 @@ in
     };
 
     style = lib.mkDefault ''
+      /* min-height: 0 on the universal selector is essential — without it
+         GTK's default minimum fights the explicit heights below and the
+         pills end up taller than intended, which is what pushes them
+         off-centre in the bar. */
       * {
         font-family: "${t.font}", "Symbols Nerd Font";
         font-size: ${toString t.fontSize}pt;
         border: none;
         border-radius: 0;
         min-height: 0;
+        margin: 0;
+        padding: 0;
       }
 
       /* fully transparent bar; only the pills are visible */
@@ -175,8 +180,12 @@ in
         color: #${t.fg};
       }
 
-      /* Text pills: horizontal padding sizes them to their content,
-         min-height plus zero vertical padding centres that content. */
+      /* Every pill. pillHeight + 2*vMargin == barHeight exactly, so there
+         is no leftover vertical space for GTK to distribute arbitrarily.
+         Zero vertical padding + a fixed min-height is what centres the
+         label inside the pill. */
+      #custom-keybinds,
+      #custom-power,
       #workspaces,
       #clock,
       #cpu,
@@ -188,21 +197,15 @@ in
       #battery {
         background: rgba(${t.rgbSurface}, 0.55);
         border-radius: ${toString t.rounding}px;
+        min-height: ${toString pillHeight}px;
         padding: 0 11px;
-        margin: 4px 3px;
-        min-height: 24px;
+        margin: ${toString vMargin}px 3px;
       }
 
-      /* Icon-only pills: no padding, fixed min-width. GTK centres the
-         label in its allocation; the hair-space padding in the format
-         string above compensates for the glyph's own bearing. */
+      /* Icon-only pills: no padding, fixed width, glyph centred by GTK */
       #custom-keybinds,
       #custom-power {
-        background: rgba(${t.rgbSurface}, 0.55);
-        border-radius: ${toString t.rounding}px;
         padding: 0;
-        margin: 4px 3px;
-        min-height: 24px;
         min-width: 34px;
       }
 
@@ -214,16 +217,27 @@ in
         background: rgba(${t.rgbSurface}, 0.9);
       }
 
+      /* The workspace container holds buttons rather than a label, so it
+         needs its own inner geometry. Button height is pillHeight minus
+         its own 2px vertical margin on each side. */
       #workspaces {
         padding: 0 4px;
       }
 
       #workspaces button {
-        padding: 0 8px;
-        margin: 3px 1px;
+        min-height: ${toString (pillHeight - 4)}px;
+        min-width: ${toString (pillHeight - 4)}px;
+        padding: 0 6px;
+        margin: 2px 1px;
         color: #${t.fgDim};
         background: transparent;
         border-radius: ${toString t.rounding}px;
+      }
+
+      /* An empty workspace that only exists because it is persistent is
+         dimmed further, so occupied ones stand out. */
+      #workspaces button.empty {
+        color: #${t.inactive};
       }
 
       #workspaces button.active {

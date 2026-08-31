@@ -7,11 +7,10 @@
     xwayland.enable = true;
   };
 
-  # ---- display manager ----
-  services.displayManager.sddm = {
-    enable = true;
-    wayland.enable = true;
-  };
+  # NOTE: the display manager lives in defaults/system/sddm.nix, which
+  # builds a custom QML theme from defaults/theme.nix. Do NOT enable
+  # services.displayManager.sddm here as well — two definitions of the
+  # same option is a build error.
 
   xdg.portal = {
     enable = true;
@@ -29,6 +28,7 @@
     ];
     fontconfig.defaultFonts = {
       monospace = [ "JetBrainsMono Nerd Font" "Symbols Nerd Font" ];
+      sansSerif = [ "Noto Sans" ];
       emoji = [ "Noto Color Emoji" ];
     };
   };

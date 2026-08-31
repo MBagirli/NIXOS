@@ -5,6 +5,7 @@
   # kitty, waybar, rofi, dunst, hyprlock are installed by their
   # programs.*.enable lines.
   environment.systemPackages = with pkgs; [
+    # ---- CLI ----
     git
     wget
     curl
@@ -13,17 +14,30 @@
     tree
     ripgrep
     fd
+    file
+    lsof
+    vim
     fastfetch
     htop
     btop
     brightnessctl
     playerctl
     wl-clipboard
-    grim
-    slurp
     libnotify
     usbutils
     pciutils
+    freerdp
+
+    # ---- screenshots ----
+    grim
+    slurp
+    swappy
+
+    # ---- display management ----
+    nwg-displays        # GUI: drag monitors around, writes hypr syntax
+    wlr-randr           # CLI equivalent, useful for scripts
+
+    # ---- GUI ----
     firefox
     thunar
     tumbler
@@ -31,9 +45,12 @@
     imv
     pavucontrol
     networkmanagerapplet
-    swappy
-    file
-    lsof
-    vim
+
+    # ---- icon themes ----
+    # papirus is primary; the other two are fallbacks rofi walks when
+    # papirus has no match for a .desktop Icon= name
+    papirus-icon-theme
+    adwaita-icon-theme
+    hicolor-icon-theme
   ];
 }
